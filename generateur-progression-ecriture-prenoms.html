@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Quelle Classe -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de progression d'écriture des prénoms en cursive</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            /* footer wrapper */
+            min-height: calc(100vh - 1rem); /* 100% - footer */
+            position: relative;
+        }
+        main {
+            overflow: auto;
+            padding-bottom: 2rem;
+        }
+        h1 {
+            text-transform: uppercase;
+        }
+        label {
+            font-weight: bold;
+        }
+        table {
+            border: 1px solid #aaa;
+            border-collapse: collapse;
+            width: 98%;
+            margin: auto;
+            margin-top: 16px;
+        }
+        th {
+            border: 1px solid #aaa;
+            background-color: #E9E9ED;
+        }
+        td {
+            border-left: 1px solid #aaa;
+            border-right: 1px solid #aaa;
+            text-align: center;
+        }
+        input, textarea, button {
+            font-family: inherit;
+            font-size: 1rem;
+            margin: 8px;
+            box-sizing: border-box;
+            width: 30em;
+            resize: none;
+        }
+        footer {
+            position: absolute;
+            bottom: 0px;
+            width: 100%;
+        }
+        .help-txt {
+            margin: 0.3em;
+            font-style: italic;
+        }
+        .copyright-txt {
+            margin: 0;
+            font-size: 0.6rem;
+        }
+        #printBtn, #csvBtn {
+            display: none;
+        }
+        @media print {
+            .noprint {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Progression d'écriture des prénoms en cursive</h1>
+        <div class="noprint">
+            <label for="letters">Progression des lettres :</label>
+            <p class="help-txt">(Vous pouvez modifier l'ordre des lettres)</p>
+            <input type="text" id="letters" value="eliutcoadmnrsphkjyqgfbvwzx" />
+            <br>
+            <label for="names">Prénoms :</label>
+            <p class="help-txt">(Séparés par une virgule)</p>
+            <textarea name="names" id="names" cols="40" rows="8" placeholder="Exemple : Tom, Victor, Lola"></textarea>
+            <br>
+            <button onclick="generateTable()">Générer le tableau</button>
+            <br>
+            <button id="printBtn" onclick="window.print()">Imprimer le tableau</button>
+            <br>
+            <button id="csvBtn" onclick="downloadTableCSV()">Exporter au format CSV</button>
+            <br>
+        </div>
+        <div id="result"></div>
+    </main>
+    <footer class="noprint"><p class="copyright-txt">Copyright &copy; 2026 Quelle Classe</p></footer>
+    <script>
+function isLowerCaseLetter(x)
+{
+    return /[a-z]/.test(x);
+}
+
+function generateTable()
+{
+    const lettersInput = document.getElementById('letters').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const namesInput = document.getElementById('names').value;
+    const letters = [];
+    
+    for (const c of lettersInput)
+    {
+        if (isLowerCaseLetter(c) && !letters.includes(c))
+        {
+            letters.push(c);
+        }
+    }
+    
+    for (const c of "abcdefghijklmnopqrstuvwxyz")
+    {
+        if (!letters.includes(c))
+        {
+            letters.push(c);
+        }
+    }
+    
+    const namesInputSplit = namesInput.split(',');
+    const names = [];
+    
+    for (const str of namesInputSplit)
+    {
+        trimmed = str.trim();
+        
+        if (trimmed.charAt(0) != ',')
+        {
+            names.push(trimmed);
+        }
+    }
+    
+    const namesLetters = [];
+    const letterSet = new Set(letters);
+    
+    for (const name of names)
+    {
+        let nn = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        nameChars = new Set(nn);
+        namesLetters.push(nameChars.intersection(letterSet));
+    }
+    
+    const alreadyAdded = [];
+    const columns = [];
+    let maxNameCnt = 0;
+    
+    for (let i = 0; i < letters.length; ++i)
+    {
+        const availableLetters = new Set(letters.slice(0, i + 1));
+        columns[i] = [];
+        
+        for (let j = 0; j < names.length; ++j)
+        {
+            const name = names[j];
+            
+            if (!alreadyAdded.includes(name) && namesLetters[j].difference(availableLetters).size == 0)
+            {
+                columns[i].push(name);
+                alreadyAdded.push(name);
+            }
+        }
+        
+        maxNameCnt = Math.max(maxNameCnt, columns[i].length);
+    }
+    
+    const table = document.createElement('table');
+    const headerRow = document.createElement('tr');
+    
+    for (let i = 0; i < letters.length; ++i)
+    {
+        const th = document.createElement('th');
+        th.textContent = letters[i];
+        headerRow.appendChild(th);
+    }
+    
+    table.appendChild(headerRow);
+    
+    for (let i = 0; i < maxNameCnt; ++i)
+    {
+        const row = document.createElement('tr');
+        
+        for (let j = 0; j < letters.length; ++j)
+        {
+            const td = document.createElement('td');
+            td.textContent = columns[j][i] || '';
+            row.appendChild(td);
+        }
+        
+        table.appendChild(row);
+    }
+    
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '';
+    resultDiv.appendChild(table);
+    document.getElementById('printBtn').style.display = "initial";
+    document.getElementById('csvBtn').style.display = "initial";
+}
+
+function downloadTableCSV()
+{
+    let csvData = [];
+    let rows = document.getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++)
+    {
+        let cols = rows[i].querySelectorAll('td,th');
+        let csvRow = [];
+        
+        for (let j = 0; j < cols.length; j++)
+        {
+            csvRow.push(cols[j].innerHTML);
+        }
+        
+        csvData.push(csvRow.join(","));
+    }
+    
+    csvData = csvData.join('\n');
+    csvFile = new Blob([csvData], { type: "text/csv" });
+    let tmpLink = document.createElement('a');
+    tmpLink.download = "data.csv";
+    let url = window.URL.createObjectURL(csvFile);
+    tmpLink.href = url;
+    tmpLink.style.display = "none";
+    document.body.appendChild(tmpLink);
+    tmpLink.click();
+    document.body.removeChild(tmpLink);
+}
+    </script>
+</body>
+</html>
