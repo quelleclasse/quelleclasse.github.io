@@ -138,9 +138,9 @@ function generateTable()
     
     for (const name of names)
     {
-        let nn = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        nameChars = new Set(nn);
-        namesLetters.push(nameChars.intersection(letterSet));
+        const nn = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const inter = new Set([...nn].filter(x => letterSet.has(x)));
+        namesLetters.push(inter);
     }
     
     const alreadyAdded = [];
@@ -156,10 +156,14 @@ function generateTable()
         {
             const name = names[j];
             
-            if (!alreadyAdded.includes(name) && namesLetters[j].difference(availableLetters).size == 0)
+            if (!alreadyAdded.includes(name))
             {
-                columns[i].push(name);
-                alreadyAdded.push(name);
+                const dif = new Set([...namesLetters[j]].filter(x => !availableLetters.has(x)));
+                if (dif.size == 0)
+                {
+                    columns[i].push(name);
+                    alreadyAdded.push(name);
+                }
             }
         }
         
